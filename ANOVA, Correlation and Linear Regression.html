@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stat-Ease Analyst: Relationship & Multi-Group Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax -->
+    <script>
+    MathJax = {
+      tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]},
+      svg: {fontCache: 'global'}
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- jStat -->
+    <script src="https://cdn.jsdelivr.net/npm/jstat@1.9.4/dist/jstat.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Navigation Steps */
+        .step-active { @apply border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50; }
+        .step-inactive { @apply border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50; }
+        
+        /* Component Styles */
+        .lab-card { @apply bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-shadow hover:shadow-md; }
+        .input-error { @apply ring-2 ring-red-500 bg-red-50 border-red-500; }
+        
+        /* Buttons */
+        .btn-primary { @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2; }
+        .btn-secondary { @apply bg-white hover:bg-gray-50 text-indigo-600 font-bold py-2.5 px-6 rounded-lg border border-gray-200 shadow-sm transition-all transform hover:-translate-y-0.5 focus:outline-none; }
+        
+        /* Badges - Updated Styles */
+        .badge-sig { @apply bg-green-100 text-green-800 border border-green-300 px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm flex items-center justify-center; }
+        .badge-nonsig { @apply bg-rose-100 text-rose-800 border border-rose-300 px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm flex items-center justify-center; }
+        
+        /* Lab Status Badges */
+        .badge-pending { @apply text-xs font-bold px-3 py-1 rounded bg-gray-200 text-gray-600 border border-gray-300; }
+        .badge-pass { @apply text-xs font-bold px-3 py-1 rounded bg-green-100 text-green-700 border border-green-200; }
+        .badge-fail { @apply text-xs font-bold px-3 py-1 rounded bg-indigo-100 text-indigo-700 border border-indigo-200; }
+
+        /* Lab Components from Reference */
+        .lab-box {
+            background: #fff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            @apply p-2 hover:bg-gray-50 rounded border border-transparent hover:border-gray-200 transition-colors cursor-pointer;
+        }
+        .checklist-item input {
+            accent-color: #4f46e5;
+            width: 1.1em;
+            height: 1.1em;
+            margin-top: 0.15em;
+        }
+
+        /* Utilities */
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-gray-800 min-h-screen p-4 md:p-8">
+
+<div class="max-w-5xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden min-h-[850px] flex flex-col relative border border-gray-100">
+    
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-5 md:px-8 flex justify-between items-center shadow-md z-10">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <svg class="w-7 h-7 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Stat-Ease Analyst
+            </h1>
+            <p class="text-indigo-100 text-xs font-medium tracking-wide ml-9 opacity-90">RELATIONSHIP & MULTI-GROUP EDITION</p>
+        </div>
+        <div>
+            <!-- Home / Reset Button -->
+            <button id="btn-home" onclick="app.reset()" class="hidden bg-indigo-700 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center border border-indigo-500 shadow-sm">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Switch Analysis
+            </button>
+        </div>
+    </header>
+
+    <!-- Wizard Nav -->
+    <nav id="wizard-nav" class="hidden flex border-b border-gray-200 bg-white text-sm md:text-base sticky top-0 z-10 shadow-sm">
+        <button id="nav-step1" class="flex-1 py-4 text-center font-medium step-active transition-all duration-200 focus:outline-none group">
+            <span class="text-xs font-bold uppercase tracking-wider block mb-1 text-gray-400 group-[.step-active]:text-indigo-500">Step 1</span>
+            Data Entry
+        </button>
+        <button id="nav-step2" class="flex-1 py-4 text-center font-medium step-inactive transition-all duration-200 focus:outline-none group" disabled>
+             <span class="text-xs font-bold uppercase tracking-wider block mb-1 text-gray-400 group-[.step-active]:text-indigo-500">Step 2</span>
+             Assumption Labs
+        </button>
+        <button id="nav-step3" class="flex-1 py-4 text-center font-medium step-inactive transition-all duration-200 focus:outline-none group" disabled>
+             <span class="text-xs font-bold uppercase tracking-wider block mb-1 text-gray-400 group-[.step-active]:text-indigo-500">Step 3</span>
+             Results & Report
+        </button>
+    </nav>
+
+    <!-- Content Area -->
+    <main id="appContent" class="flex-grow p-6 md:p-10 relative bg-slate-50">
+        
+        <!-- STEP 0: SELECTION (HOME) -->
+        <div id="step0" class="flex flex-col items-center justify-center h-full py-8 fade-in">
+            <!-- (Same content as before) -->
+            <div class="text-center space-y-3 mb-10 max-w-2xl">
+                <h2 class="text-3xl font-bold text-gray-900">Select Your Analysis</h2>
+                <p class="text-gray-500 text-lg">Choose the type of statistical relationship or difference you wish to investigate.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl px-2">
+                <!-- Card 1: ANOVA -->
+                <button onclick="app.selectMode('anova')" class="group relative bg-white p-8 rounded-lg shadow-sm hover:shadow-xl border-2 border-transparent hover:border-indigo-500 transition-all duration-300 text-left flex flex-col h-72 justify-between overflow-hidden">
+                    <div class="absolute -top-6 -right-6 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                        <svg class="w-48 h-48 text-indigo-900" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors text-indigo-600 shadow-sm">
+                           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Compare Groups</h3>
+                        <p class="text-gray-500 mt-3 leading-relaxed">Analyze differences between 3+ groups. Handles Normal, Welch, and Kruskal-Wallis logic automatically.</p>
+                    </div>
+                    <div class="text-indigo-600 font-bold flex items-center mt-4 group-hover:underline decoration-2 underline-offset-4">
+                        Start ANOVA <span class="ml-2 group-hover:translate-x-2 transition-transform">&rarr;</span>
+                    </div>
+                </button>
+
+                <!-- Card 2: Relationship -->
+                <button onclick="app.selectMode('relationship')" class="group relative bg-white p-8 rounded-lg shadow-sm hover:shadow-xl border-2 border-transparent hover:border-indigo-500 transition-all duration-300 text-left flex flex-col h-72 justify-between overflow-hidden">
+                    <div class="absolute -top-6 -right-6 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                        <svg class="w-48 h-48 text-indigo-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <div>
+                        <div class="bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors text-indigo-600 shadow-sm">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">Analyze Relationship</h3>
+                        <p class="text-gray-500 mt-3 leading-relaxed">Investigate associations using Correlation (Pearson/Spearman) or Linear Regression.</p>
+                    </div>
+                    <div class="text-indigo-600 font-bold flex items-center mt-4 group-hover:underline decoration-2 underline-offset-4">
+                        Start Analysis <span class="ml-2 group-hover:translate-x-2 transition-transform">&rarr;</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 1: DATA ENTRY -->
+        <div id="step1" class="fade-in hidden space-y-6 max-w-4xl mx-auto">
+             <!-- Relationship Type Selector -->
+             <div id="relationship-controls" class="hidden bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-lg">Analysis Goal</h3>
+                    <p class="text-sm text-gray-500">What specific question are you trying to answer?</p>
+                </div>
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="relType" value="correlation" checked onchange="app.updateRelType()" class="peer sr-only">
+                        <span class="block px-6 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Correlation</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="relType" value="regression" onchange="app.updateRelType()" class="peer sr-only">
+                        <span class="block px-6 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Regression</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ANOVA Input Mode Switcher -->
+            <div id="anova-mode-switch" class="flex justify-center mb-6 hidden">
+                <div class="bg-gray-100 p-1 rounded-lg inline-flex shadow-inner">
+                    <button onclick="app.setAnovaMode('separate')" id="mode-separate" class="px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm">Separate Groups</button>
+                    <button onclick="app.setAnovaMode('columns')" id="mode-columns" class="px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900">2-Column List</button>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
+                <p class="text-sm text-blue-800"><strong>Instructions:</strong> Paste your raw data. Values should be numeric. Empty cells/lines are ignored.</p>
+            </div>
+
+            <!-- ANOVA Inputs: Separate -->
+            <div id="anova-inputs" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden"></div>
+            <div id="anova-controls" class="hidden mt-2">
+                <button onclick="app.addAnovaGroup()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-gray-700 font-bold border border-gray-200 transition">+ Add Group</button>
+                <button onclick="app.removeAnovaGroup()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-gray-700 font-bold ml-2 border border-gray-200 transition">- Remove Group</button>
+            </div>
+
+            <!-- ANOVA Inputs: Columns -->
+            <div id="anova-column-input" class="hidden">
+                 <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                     <div class="mb-4">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Paste Raw Data (Two Columns)</label>
+                        <textarea id="raw-anova-data" class="w-full h-72 p-4 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm resize-none shadow-inner bg-gray-50" placeholder="GroupA 12.5&#10;GroupA 14.2&#10;GroupB 9.8..."></textarea>
+                     </div>
+                     <div class="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div>
+                          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Value Column</label>
+                          <select id="col-val-idx" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500" onchange="app.syncColumnSelects('col-val-idx')">
+                              <option value="0">Column 1 (First)</option>
+                              <option value="1" selected>Column 2 (Second)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Group Column</label>
+                          <select id="col-group-idx" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500" onchange="app.syncColumnSelects('col-group-idx')">
+                              <option value="0" selected>Column 1 (First)</option>
+                              <option value="1">Column 2 (Second)</option>
+                          </select>
+                        </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- X/Y Inputs -->
+            <div id="xy-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                <div>
+                     <div class="flex justify-between items-center mb-2 bg-indigo-50 p-1 rounded-md">
+                        <input type="text" id="x-name" value="Variable X" class="font-bold text-sm text-indigo-700 bg-transparent outline-none w-full px-1 border-b border-transparent focus:border-indigo-400" placeholder="Variable X Name">
+                    </div>
+                    <textarea id="dataX" class="w-full h-72 p-4 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm resize-none shadow-inner bg-gray-50" placeholder="10&#10;12&#10;15..."></textarea>
+                </div>
+                <div>
+                     <div class="flex justify-between items-center mb-2 bg-indigo-50 p-1 rounded-md">
+                        <input type="text" id="y-name" value="Variable Y" class="font-bold text-sm text-indigo-700 bg-transparent outline-none w-full px-1 border-b border-transparent focus:border-indigo-400" placeholder="Variable Y Name">
+                    </div>
+                    <textarea id="dataY" class="w-full h-72 p-4 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm resize-none shadow-inner bg-gray-50" placeholder="100&#10;120&#10;145..."></textarea>
+                </div>
+            </div>
+
+            <!-- Error Box -->
+            <div id="error-msg" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm flex items-start">
+                <svg class="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <h3 class="text-red-800 font-bold text-sm">Validation Error</h3>
+                    <p id="error-text" class="text-red-700 text-sm mt-1"></p>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4">
+                <button onclick="app.validateAndProceed()" class="btn-primary flex items-center">
+                    Proceed to Assumptions 
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: ASSUMPTION LABS (UPDATED CARDS) -->
+        <div id="step2" class="fade-in hidden max-w-4xl mx-auto space-y-5">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Assumption Labs</h2>
+                <p class="text-gray-500">Verify your data fits the statistical rules before proceeding.</p>
+            </div>
+
+            <!-- Card 1: Normality Check -->
+            <div class="lab-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-indigo-600">1. Normality Lab</h3>
+                    <span id="badge-normality" class="badge-pending">Decision Pending</span>
+                </div>
+                <p class="text-sm text-gray-500 mb-4">Check histograms, skewness, and kurtosis to see if data looks bell-shaped.</p>
+                <button onclick="app.openModal('normality-modal')" class="btn-secondary w-full flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                    Check Data Distribution
+                </button>
+            </div>
+
+            <!-- Card 2: Homogeneity / Linearity -->
+            <div class="lab-card">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 id="card-title-sec" class="text-lg font-bold text-indigo-600">2. Homogeneity Lab</h3>
+                    <span id="badge-secondary" class="badge-pending">Decision Pending</span>
+                </div>
+                <p id="card-desc-sec" class="text-sm text-gray-500 mb-4">Compare variances between groups using boxplots and standard deviations.</p>
+                <button onclick="app.openModal('secondary-modal')" class="btn-secondary w-full flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Check Assumption
+                </button>
+            </div>
+
+            <!-- Smart Logic Footer -->
+            <div class="bg-amber-50 p-4 rounded-lg border border-amber-200 text-sm text-amber-900 flex items-start shadow-sm mt-4">
+                 <svg class="w-5 h-5 mr-3 mt-0.5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <strong>Smart Logic Enabled:</strong> Based on your decisions in the labs above, the app will automatically select the robust test (e.g., Welch's F, Kruskal-Wallis, Spearman) if assumptions are violated.
+                </div>
+            </div>
+
+            <div class="flex flex-col items-end pt-4 pb-8">
+                <p id="step2-error" class="text-red-500 font-bold text-sm mb-2 hidden animate-pulse bg-red-50 px-3 py-1 rounded border border-red-200">Please make a decision for both labs above first!</p>
+                <button onclick="app.goToResults()" class="btn-primary flex items-center text-lg px-8">
+                    Run Analysis 
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: RESULTS -->
+        <div id="step3" class="fade-in hidden max-w-5xl mx-auto space-y-6">
+            <!-- (Same content as before) -->
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gray-50 border-b border-gray-100 p-6 flex justify-between items-start">
+                    <div>
+                        <h2 id="final-test-name" class="text-2xl font-bold text-gray-900">Test Name</h2>
+                        <div class="flex items-center mt-2">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide mr-2">Logic Used</span>
+                            <p id="final-test-logic" class="text-sm text-gray-500">Logic...</p>
+                        </div>
+                    </div>
+                    <div id="significance-badge"></div>
+                </div>
+
+                <div class="p-6 md:p-8 space-y-8">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Col 1: Calculated Statistics -->
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Calculated Statistics</h3>
+                            <div id="stats-list" class="space-y-3"></div>
+                        </div>
+                        <!-- Col 2: Decision Criteria -->
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Decision Criteria</h3>
+                            <div class="bg-slate-50 rounded-lg p-4 text-sm text-gray-600 space-y-2 border border-slate-100">
+                                <div class="flex justify-between"><span>Alpha Level ($\alpha$):</span> <span class="font-mono font-bold">0.05</span></div>
+                                <div class="flex justify-between"><span>P-Value:</span> <span id="res-p-val" class="font-mono font-bold"></span></div>
+                                <div id="decision-text" class="pt-2 mt-2 border-t border-slate-200 font-medium text-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualization -->
+                     <div>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 text-center">Probability Distribution</h3>
+                        <div id="result-curve" class="h-64 w-full bg-white relative"></div>
+                         <div class="flex justify-center mt-2 space-x-6 text-xs text-gray-500">
+                            <div class="flex items-center"><span class="w-3 h-3 bg-red-200 mr-2 rounded-full border border-red-300"></span> Critical Region</div>
+                            <div class="flex items-center"><span class="w-3 h-3 bg-blue-600 mr-2 rounded-full border border-blue-700"></span> Your Result</div>
+                        </div>
+                    </div>
+
+                    <!-- Conclusion -->
+                    <div class="border-l-4 border-indigo-500 bg-indigo-50 p-4 rounded-r-lg">
+                        <h3 class="text-indigo-900 font-bold mb-1">Hypothesis Conclusion</h3>
+                        <p id="interpretation" class="text-indigo-800 text-sm leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- APA Footer -->
+                <div class="bg-slate-800 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                     <div class="font-mono text-indigo-100 text-sm break-all" id="apa-string">
+                        APA Result string...
+                     </div>
+                     <button onclick="app.copyToClipboard()" class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-4 rounded flex items-center transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2v1h-4V4z"></path></svg>
+                        Copy APA Result
+                     </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-start pt-4">
+                <button onclick="app.reset()" class="text-gray-500 hover:text-indigo-600 text-sm font-medium flex items-center transition">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Start New Analysis
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODALS -->
+    
+    <!-- 1. Normality Modal -->
+    <div id="normality-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-5xl shadow-2xl rounded-xl bg-white flex flex-col max-h-[90vh]">
+             <div class="flex justify-between items-center p-5 border-b border-gray-100">
+                <h3 class="text-xl font-bold text-gray-900">Distribution Analysis Lab</h3>
+                <button onclick="app.closeModal('normality-modal')" class="text-gray-400 hover:text-gray-600"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            
+            <div class="overflow-y-auto p-6 space-y-6 bg-slate-50 flex-grow">
+                <div class="bg-blue-50 p-4 rounded border border-blue-100 text-sm text-blue-900">
+                     <p class="font-bold mb-2">Instructions:</p>
+                     <p class="mb-3">Review the checklist. Use these guides to decide if data is "Normal Enough".</p>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-3 rounded border border-blue-200">
+                        <div>
+                             <span class="block text-xs font-bold text-gray-500 uppercase mb-1">Skewness Guide</span>
+                             <ul class="space-y-1 text-xs">
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-green-700">-1 to +1</span> <span>Very close to normal</span></li>
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-yellow-600">-2 to +2</span> <span>Acceptable</span></li>
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-red-600">Outside ±2</span> <span>Strong deviation</span></li>
+                             </ul>
+                        </div>
+                        <div>
+                             <span class="block text-xs font-bold text-gray-500 uppercase mb-1">Excess Kurtosis Guide</span>
+                             <ul class="space-y-1 text-xs">
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-green-700">-1 to +1</span> <span>Very close to normal</span></li>
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-yellow-600">-2 to +2</span> <span>Acceptable</span></li>
+                                 <li class="flex items-center gap-2"><span class="w-16 font-mono font-bold text-red-600">Outside ±2</span> <span>Clear deviation</span></li>
+                             </ul>
+                        </div>
+                     </div>
+                </div>
+
+                <div id="normality-lab-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                
+                <!-- NEW AGGREGATE CHECKLIST -->
+                <div id="normality-agg-checklist" class="bg-white p-4 rounded border border-gray-200">
+                    <h4 class="font-bold border-b border-gray-300 mb-2 pb-1 text-sm">Overall Normality Check</h4>
+                    <div class="space-y-2 text-sm" id="norm-agg-list"></div>
+                </div>
+            </div>
+
+            <div class="p-5 border-t border-gray-100 bg-white rounded-b-xl flex justify-end gap-3">
+                <div class="text-sm text-gray-500 self-center mr-auto italic hidden md:block">Based on your analysis above:</div>
+                <button onclick="app.finalizeAssumption('normality', true)" class="btn-primary bg-green-600 hover:bg-green-700 border-none">Conclude: Normal</button>
+                <button onclick="app.finalizeAssumption('normality', false)" class="btn-primary bg-indigo-600 hover:bg-indigo-700 border-none">Conclude: Not Normal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Homogeneity/Linearity Modal -->
+    <div id="secondary-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-5xl shadow-2xl rounded-xl bg-white flex flex-col max-h-[90vh]">
+             <div class="flex justify-between items-center p-5 border-b border-gray-100">
+                <h3 id="modal-title-sec" class="text-xl font-bold text-gray-900">Homogeneity Check</h3>
+                <button onclick="app.closeModal('secondary-modal')" class="text-gray-400 hover:text-gray-600"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            
+            <div class="overflow-y-auto p-6 space-y-6 bg-slate-50 flex-grow">
+                 <div class="bg-blue-50 p-4 rounded border border-blue-100 text-sm text-blue-900">
+                    <p class="font-bold mb-2">Instructions:</p>
+                    <p id="modal-instr-sec" class="mb-0">Use the boxplots and statistics to check if variability is consistent across groups.</p>
+                </div>
+                
+                <!-- Toggle for alignment -->
+                <div id="boxplot-controls" class="flex justify-end">
+                     <label class="flex items-center cursor-pointer text-sm text-gray-600 hover:text-indigo-600 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm transition">
+                         <input type="checkbox" id="alignMedianCheck" class="mr-2 h-4 w-4 text-indigo-600 accent-indigo-600" onchange="app.toggleBoxplotAlign()">
+                         <span>Align Medians (Compare Spread Only)</span>
+                     </label>
+                </div>
+
+                <div id="secondary-viz-content" class="bg-white p-4 rounded border border-gray-200"></div>
+                <div id="secondary-stats-content" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </div>
+
+            <div class="p-5 border-t border-gray-100 bg-white rounded-b-xl flex justify-end gap-3">
+                <div class="text-sm text-gray-500 self-center mr-auto italic hidden md:block">Based on checklist:</div>
+                <button id="btn-sec-pass" onclick="app.finalizeAssumption('secondary', true)" class="btn-primary bg-green-600 hover:bg-green-700 border-none">Assume Passed</button>
+                <button id="btn-sec-fail" onclick="app.finalizeAssumption('secondary', false)" class="btn-primary bg-indigo-600 hover:bg-indigo-700 border-none">Assume Failed</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/**
+ * Stat-Ease Analyst Core Application Logic
+ */
+
+const app = {
+    state: {
+        currentStep: 0,
+        testCategory: null, 
+        testType: 'anova',
+        anovaInputMode: 'separate', 
+        data: [], 
+        anovaGroups: 3,
+        alignMedians: false,
+        assumptions: {
+            normality: null,     // null = pending (changed from 'normal' to 'normality' for consistency)
+            secondary: null   // null = pending (Homogeneity or Linearity)
+        }
+    },
+
+    init: function() {
+        this.renderAnovaInputs();
+        this.setStep(0);
+    },
+
+    selectMode: function(mode) {
+        this.state.testCategory = mode;
+        if (mode === 'anova') {
+            this.state.testType = 'anova';
+            document.getElementById('anova-inputs').classList.remove('hidden');
+            document.getElementById('anova-controls').classList.remove('hidden');
+            document.getElementById('anova-mode-switch').classList.remove('hidden');
+            document.getElementById('xy-inputs').classList.add('hidden');
+            document.getElementById('relationship-controls').classList.add('hidden');
+            this.setAnovaMode('separate'); // Default
+        } else {
+            this.state.testType = 'correlation';
+            document.getElementById('anova-inputs').classList.add('hidden');
+            document.getElementById('anova-controls').classList.add('hidden');
+            document.getElementById('anova-mode-switch').classList.add('hidden');
+            document.getElementById('anova-column-input').classList.add('hidden');
+            document.getElementById('xy-inputs').classList.remove('hidden');
+            document.getElementById('relationship-controls').classList.remove('hidden');
+            document.querySelector('input[name="relType"][value="correlation"]').checked = true;
+        }
+
+        document.getElementById('wizard-nav').classList.remove('hidden');
+        document.getElementById('btn-home').classList.remove('hidden');
+        this.setStep(1);
+    },
+    
+    setAnovaMode: function(mode) {
+        this.state.anovaInputMode = mode;
+        const btnSep = document.getElementById('mode-separate');
+        const btnCol = document.getElementById('mode-columns');
+        
+        if (mode === 'separate') {
+            document.getElementById('anova-inputs').classList.remove('hidden');
+            document.getElementById('anova-controls').classList.remove('hidden');
+            document.getElementById('anova-column-input').classList.add('hidden');
+            
+            btnSep.className = "px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm";
+            btnCol.className = "px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900";
+        } else {
+            document.getElementById('anova-inputs').classList.add('hidden');
+            document.getElementById('anova-controls').classList.add('hidden');
+            document.getElementById('anova-column-input').classList.remove('hidden');
+            
+            btnCol.className = "px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm";
+            btnSep.className = "px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900";
+        }
+    },
+    
+    syncColumnSelects: function(changedId) {
+        const valSel = document.getElementById('col-val-idx');
+        const grpSel = document.getElementById('col-group-idx');
+        if (changedId === 'col-val-idx') {
+             if (grpSel.value === valSel.value) {
+                 grpSel.value = valSel.value === "0" ? "1" : "0";
+             }
+        } else {
+             if (valSel.value === grpSel.value) {
+                 valSel.value = grpSel.value === "0" ? "1" : "0";
+             }
+        }
+    },
+
+    reset: function() {
+        this.state.currentStep = 0;
+        this.state.data = [];
+        this.state.alignMedians = false;
+        this.state.assumptions.normality = null;
+        this.state.assumptions.secondary = null;
+        
+        document.getElementById('wizard-nav').classList.add('hidden');
+        document.getElementById('btn-home').classList.add('hidden');
+        document.getElementById('alignMedianCheck').checked = false;
+        
+        this.updateBadge('badge-normality', null);
+        this.updateBadge('badge-secondary', null);
+        
+        // Hide error message on reset
+        document.getElementById('step2-error').classList.add('hidden');
+
+        this.setStep(0);
+        document.getElementById('error-msg').classList.add('hidden');
+    },
+
+    updateRelType: function() {
+        const radios = document.getElementsByName('relType');
+        for(let r of radios) {
+            if(r.checked) {
+                this.state.testType = r.value;
+                break;
+            }
+        }
+    },
+
+    setStep: function(step) {
+        const stepIds = ['step0', 'step1', 'step2', 'step3'];
+        stepIds.forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.toggle('hidden', idx !== step);
+        });
+
+        if (step > 0) {
+            ['nav-step1', 'nav-step2', 'nav-step3'].forEach((id, idx) => {
+                const btn = document.getElementById(id);
+                btn.classList.toggle('step-active', (idx + 1) === step);
+                btn.classList.toggle('step-inactive', (idx + 1) !== step);
+            });
+            window.scrollTo(0,0);
+        }
+        this.state.currentStep = step;
+    },
+
+    renderAnovaInputs: function() {
+        const container = document.getElementById('anova-inputs');
+        container.innerHTML = '';
+        container.className = `grid grid-cols-1 md:grid-cols-${Math.min(this.state.anovaGroups, 5)} gap-4`;
+        
+        for(let i=0; i<this.state.anovaGroups; i++) {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-2 bg-indigo-50 p-1 rounded-md">
+                    <input type="text" id="group-name-${i}" value="Group ${i+1}" class="font-bold text-sm text-indigo-700 bg-transparent outline-none w-full px-1 border-b border-transparent focus:border-indigo-400" placeholder="Group Name">
+                </div>
+                <textarea id="group${i}" class="w-full h-72 p-4 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm resize-none shadow-inner bg-gray-50" placeholder="Data..."></textarea>
+            `;
+            container.appendChild(div);
+        }
+    },
+
+    addAnovaGroup: function() {
+        if(this.state.anovaGroups < 5) {
+            const currentData = [];
+            const currentNames = [];
+            for(let i=0; i<this.state.anovaGroups; i++) {
+                currentData.push(document.getElementById('group'+i).value);
+                currentNames.push(document.getElementById('group-name-'+i).value);
+            }
+            this.state.anovaGroups++;
+            this.renderAnovaInputs();
+            currentData.forEach((val, i) => {
+                document.getElementById('group'+i).value = val;
+                document.getElementById('group-name-'+i).value = currentNames[i];
+            });
+        }
+    },
+
+    removeAnovaGroup: function() {
+        if(this.state.anovaGroups > 3) {
+            const currentData = [];
+            const currentNames = [];
+            for(let i=0; i<this.state.anovaGroups; i++) {
+                currentData.push(document.getElementById('group'+i).value);
+                currentNames.push(document.getElementById('group-name-'+i).value);
+            }
+            this.state.anovaGroups--;
+            this.renderAnovaInputs();
+            for(let i=0; i<this.state.anovaGroups; i++) {
+                 document.getElementById('group'+i).value = currentData[i];
+                 document.getElementById('group-name-'+i).value = currentNames[i];
+            }
+        }
+    },
+
+    parseInput: function(str) {
+        if(!str) return [];
+        return str.split(/[\n,,\s]+/).map(v => parseFloat(v)).filter(v => !isNaN(v));
+    },
+
+    validateAndProceed: function() {
+        document.querySelectorAll('textarea').forEach(t => t.classList.remove('input-error'));
+        const errDiv = document.getElementById('error-msg');
+        errDiv.classList.add('hidden');
+
+        let data = [];
+        let isValid = true;
+        let firstError = null;
+        let errorText = "";
+
+        if (this.state.testCategory === 'anova') {
+            if (this.state.anovaInputMode === 'separate') {
+                for(let i=0; i<this.state.anovaGroups; i++) {
+                    const el = document.getElementById('group'+i);
+                    const nameEl = document.getElementById('group-name-'+i);
+                    if (!el) continue;
+                    const vals = this.parseInput(el.value);
+                    const name = nameEl ? nameEl.value.trim() || `Group ${i+1}` : `Group ${i+1}`;
+                    
+                    if(vals.length < 2) {
+                        el.classList.add('input-error');
+                        isValid = false;
+                        if(!firstError) firstError = el;
+                        errorText = "Each group needs at least 2 numeric values.";
+                    }
+                    data.push({ name: name, values: vals });
+                }
+            } else {
+                const rawEl = document.getElementById('raw-anova-data');
+                const rawText = rawEl.value;
+                const valIdx = parseInt(document.getElementById('col-val-idx').value);
+                const grpIdx = parseInt(document.getElementById('col-group-idx').value);
+                
+                if (valIdx === grpIdx) {
+                    rawEl.classList.add('input-error');
+                    isValid = false;
+                    firstError = document.getElementById('col-val-idx');
+                    errorText = "Value Column and Group Column cannot be the same.";
+                } else if(!rawText.trim()) {
+                    rawEl.classList.add('input-error');
+                    isValid = false;
+                    firstError = rawEl;
+                    errorText = "Please enter data in the textarea.";
+                } else {
+                    const lines = rawText.trim().split('\n');
+                    const groupsObj = {};
+                    lines.forEach(line => {
+                        const parts = line.trim().split(/[\t, ]+/); 
+                        if (parts.length < 2) return; 
+                        
+                        const grp = parts[grpIdx];
+                        const val = parseFloat(parts[valIdx]);
+                        
+                        if (grp && !isNaN(val)) {
+                            if (!groupsObj[grp]) groupsObj[grp] = [];
+                            groupsObj[grp].push(val);
+                        }
+                    });
+
+                    const sortedKeys = Object.keys(groupsObj).sort();
+                    data = sortedKeys.map(k => ({ name: k, values: groupsObj[k] }));
+
+                    if (data.length < 2) {
+                        rawEl.classList.add('input-error');
+                        isValid = false;
+                        firstError = rawEl;
+                        errorText = `Found ${data.length} groups. Need at least 2 distinct groups.`;
+                    } else {
+                        const smallGroup = data.find(d => d.values.length < 2);
+                        if (smallGroup) {
+                            rawEl.classList.add('input-error');
+                            isValid = false;
+                            firstError = rawEl;
+                            errorText = `Group "${smallGroup.name}" has fewer than 2 valid numbers.`;
+                        }
+                    }
+                }
+            }
+        } else {
+            const xEl = document.getElementById('dataX');
+            const yEl = document.getElementById('dataY');
+            const xNameEl = document.getElementById('x-name');
+            const yNameEl = document.getElementById('y-name');
+            
+            const xVal = this.parseInput(xEl.value);
+            const yVal = this.parseInput(yEl.value);
+            
+            if(xVal.length < 3) { 
+                xEl.classList.add('input-error'); 
+                isValid = false; 
+                if(!firstError) firstError = xEl; 
+                errorText = "Need at least 3 pairs for analysis.";
+            }
+            if(yVal.length < 3) { 
+                yEl.classList.add('input-error'); 
+                isValid = false; 
+                if(!firstError) firstError = yEl; 
+            }
+            if(isValid && xVal.length !== yVal.length) {
+                isValid = false;
+                yEl.classList.add('input-error');
+                xEl.classList.add('input-error');
+                if(!firstError) firstError = xEl;
+                errorText = `Mismatch: X has ${xVal.length} items, Y has ${yVal.length}.`;
+            }
+            
+            data = {
+                x: xVal, 
+                y: yVal,
+                xName: (xNameEl.value.trim() || "Variable X") + " (X)",
+                yName: (yNameEl.value.trim() || "Variable Y") + " (Y)"
+            };
+        }
+
+        if(!isValid) {
+            document.getElementById('error-text').innerText = errorText;
+            errDiv.classList.remove('hidden');
+            if(firstError) {
+                firstError.focus();
+                firstError.scrollIntoView({behavior: "smooth", block: "center"});
+            }
+            return;
+        }
+
+        this.state.data = data;
+        this.prepareLabStep();
+        this.setStep(2);
+    },
+
+    prepareLabStep: function() {
+        // Reset assumptions for new data
+        this.state.assumptions.normality = null;
+        this.state.assumptions.secondary = null;
+        this.updateBadge('badge-normality', null);
+        this.updateBadge('badge-secondary', null);
+        
+        // Hide Step 2 error initially
+        document.getElementById('step2-error').classList.add('hidden');
+
+        // Configure Step 2 Cards
+        const secTitle = document.getElementById('card-title-sec');
+        const secDesc = document.getElementById('card-desc-sec');
+        const btnPass = document.getElementById('btn-sec-pass');
+        const btnFail = document.getElementById('btn-sec-fail');
+        const modalTitle = document.getElementById('modal-title-sec');
+        const modalInstr = document.getElementById('modal-instr-sec');
+        const boxControl = document.getElementById('boxplot-controls');
+
+        if (this.state.testCategory === 'anova') {
+            secTitle.innerText = "2. Homogeneity Lab";
+            secDesc.innerText = "Compare variances between groups using boxplots and standard deviations.";
+            modalTitle.innerText = "Homogeneity of Variance Check";
+            modalInstr.innerText = "Use the boxplots and standard deviation comparisons to check if variability is consistent across groups.";
+            btnPass.innerText = "Assume Equal Variances";
+            btnFail.innerText = "Assume Unequal Variances";
+            boxControl.classList.remove('hidden');
+        } else {
+            secTitle.innerText = "2. Linearity & Spread";
+            secDesc.innerText = "Check scatterplot for straight-line pattern and consistent spread.";
+            modalTitle.innerText = "Linearity & Homoscedasticity Check";
+            modalInstr.innerText = "Inspect the scatterplot. Does the relationship appear to follow a straight line with consistent width?";
+            btnPass.innerText = "Assume Linear/Homoscedastic";
+            btnFail.innerText = "Assume Violated";
+            boxControl.classList.add('hidden');
+        }
+    },
+
+    updateBadge: function(id, status) {
+        const el = document.getElementById(id);
+        if(status === true) {
+            el.innerText = this.state.testCategory === 'anova' && id === 'badge-secondary' ? 'Equal Variances' : (id === 'badge-secondary' ? 'Linear' : 'Normal');
+            el.className = "badge-pass";
+        } else if (status === false) {
+             el.innerText = this.state.testCategory === 'anova' && id === 'badge-secondary' ? 'Unequal Variances' : (id === 'badge-secondary' ? 'Non-Linear' : 'Non-Normal');
+             el.className = "badge-fail";
+        } else {
+            el.innerText = "Decision Pending";
+            el.className = "badge-pending";
+        }
+    },
+
+    openModal: function(modalId) {
+        if(modalId === 'normality-modal') {
+            this.renderNormalityLab();
+        } else if (modalId === 'secondary-modal') {
+            if(this.state.testCategory === 'anova') {
+                this.renderHomogeneityLab();
+            } else {
+                this.renderLinearityLab();
+            }
+        }
+        document.getElementById(modalId).classList.remove('hidden');
+    },
+
+    closeModal: function(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    },
+
+    finalizeAssumption: function(type, result) {
+        this.state.assumptions[type] = result;
+        const badgeId = type === 'normality' ? 'badge-normality' : 'badge-secondary';
+        this.updateBadge(badgeId, result);
+        this.closeModal(type === 'normality' ? 'normality-modal' : 'secondary-modal');
+        
+        // Hide validation error if it was showing, as user made a choice
+        document.getElementById('step2-error').classList.add('hidden');
+    },
+
+    toggleBoxplotAlign: function() {
+        this.state.alignMedians = document.getElementById('alignMedianCheck').checked;
+        this.renderHomogeneityLab(); // Re-render
+    },
+
+    calculateStats: function(arr) {
+        const n = arr.length;
+        const mean = jStat.mean(arr);
+        const median = jStat.median(arr);
+        const stdev = jStat.stdev(arr, true);
+        const skewness = jStat.skewness(arr); 
+        const kurtosis = jStat.kurtosis(arr);
+        const min = jStat.min(arr);
+        const max = jStat.max(arr);
+        return { n, mean, median, stdev, skewness, kurtosis, min, max };
+    },
+
+    renderNormalityLab: function() {
+        const container = document.getElementById('normality-lab-content');
+        container.innerHTML = '';
+        
+        let groupsToRender = [];
+        if(this.state.testCategory === 'anova') {
+            groupsToRender = this.state.data; // Array of objects
+        } else {
+            // Regression/Correlation: Check X and Y
+            groupsToRender = [
+                { name: this.state.data.xName, values: this.state.data.x },
+                { name: this.state.data.yName, values: this.state.data.y }
+            ];
+        }
+
+        let allGroupNLarge = true;
+
+        groupsToRender.forEach(g => {
+             const stats = this.calculateStats(g.values);
+             if (stats.n < 30) allGroupNLarge = false;
+
+             const skewStat = Math.abs(stats.skewness) <= 1 ? {c:'text-green-600', t:'Very Good'} : (Math.abs(stats.skewness) <= 2 ? {c:'text-yellow-600', t:'Acceptable'} : {c:'text-red-600', t:'Poor'});
+             const kurtStat = Math.abs(stats.kurtosis) <= 1 ? {c:'text-green-600', t:'Very Good'} : (Math.abs(stats.kurtosis) <= 2 ? {c:'text-yellow-600', t:'Acceptable'} : {c:'text-red-600', t:'Poor'});
+             const histSVG = this.generateHistogramSVG(g.values, g.name);
+
+             container.innerHTML += `
+                <div class="lab-box">
+                    <h4 class="font-bold text-lg text-gray-800 border-b pb-2 mb-3 truncate" title="${g.name}">${g.name}</h4>
+                    <div class="mb-4">${histSVG}</div>
+                    
+                    <div class="bg-gray-50 p-3 rounded mb-4 text-sm border border-gray-200">
+                         <div class="grid grid-cols-2 gap-4 mb-2">
+                            <div><span class="block text-gray-500 text-xs uppercase">Mean</span> <span class="font-mono font-bold">${stats.mean.toFixed(2)}</span></div>
+                            <div><span class="block text-gray-500 text-xs uppercase">Median</span> <span class="font-mono font-bold">${stats.median.toFixed(2)}</span></div>
+                         </div>
+                         <div class="border-t border-gray-200 pt-2 space-y-1">
+                             <div class="flex justify-between items-center text-xs">
+                                <span>Skewness:</span> 
+                                <span class="font-mono font-bold ${skewStat.c}">${stats.skewness.toFixed(2)}</span>
+                             </div>
+                             <div class="flex justify-between items-center text-xs">
+                                <span>Kurtosis:</span> 
+                                <span class="font-mono font-bold ${kurtStat.c}">${stats.kurtosis.toFixed(2)}</span>
+                             </div>
+                         </div>
+                    </div>
+
+                    <div class="space-y-1 text-sm">
+                        <label class="checklist-item">
+                            <input type="checkbox" ${stats.n >= 30 ? 'checked' : ''}>
+                            <span>n >= 30 (n=${stats.n})</span>
+                        </label>
+                        <label class="checklist-item">
+                             <input type="checkbox" ${Math.abs(stats.skewness) <= 2 ? 'checked' : ''}>
+                             <span class="${Math.abs(stats.skewness) <= 2 ? 'text-green-700' : ''}">Skew ok?</span>
+                        </label>
+                    </div>
+                </div>
+             `;
+        });
+
+        // Add aggregate checklist
+        const aggList = document.getElementById('norm-agg-list');
+        if (this.state.testCategory === 'anova') {
+            aggList.innerHTML = `
+                <!-- New Manual Independence Check -->
+                <label class="checklist-item">
+                    <input type="checkbox">
+                    <span><strong>Independence:</strong> Are observations independent? (No repeated measures)</span>
+                </label>
+
+                <label class="checklist-item">
+                    <input type="checkbox" ${allGroupNLarge ? 'checked' : ''}>
+                    <span class="${allGroupNLarge ? 'text-green-700 font-bold' : ''}">Are ALL groups n >= 30? (CLT Limit)</span>
+                </label>
+                 <div class="text-xs text-gray-500 italic mt-1 bg-yellow-50 p-2 rounded border border-yellow-100">
+                    <strong>Note:</strong> Standard ANOVA is robust to non-normality if sample sizes are large (n>=30) in every group.
+                </div>
+            `;
+        } else {
+             // 1. Calculate X Variability (New logic)
+             const xStd = jStat.stdev(this.state.data.x, true);
+             const xVaries = xStd > 0;
+
+             aggList.innerHTML = `
+                <!-- New Manual Independence Check -->
+                <label class="checklist-item">
+                    <input type="checkbox">
+                    <span><strong>Independence:</strong> Are data points independent? (No repeated measures/time order)</span>
+                </label>
+
+                <!-- New Automated X Variability Check -->
+                <label class="checklist-item">
+                    <input type="checkbox" ${xVaries ? 'checked' : ''}>
+                    <span class="${xVaries ? 'text-green-700 font-bold' : 'text-red-600 font-bold'}"><strong>Variability:</strong> Does X variable vary? (s = ${xStd.toFixed(2)})</span>
+                </label>
+
+                <label class="checklist-item">
+                    <input type="checkbox" ${allGroupNLarge ? 'checked' : ''}>
+                    <span class="${allGroupNLarge ? 'text-green-700 font-bold' : ''}">Is sample size n >= 30?</span>
+                </label>
+                
+                 <div class="text-xs text-gray-500 italic mt-1 bg-yellow-50 p-2 rounded border border-yellow-100">
+                    <strong>Note:</strong> For regression, we assume residuals are normal. Checking variables is a proxy.
+                </div>
+            `;
+        }
+    },
+
+    renderHomogeneityLab: function() {
+        const vizContainer = document.getElementById('secondary-viz-content');
+        const statsContainer = document.getElementById('secondary-stats-content');
+        
+        // 1. Horizontal Boxplot
+        vizContainer.innerHTML = this.generateBoxPlotSVG(this.state.data, this.state.alignMedians);
+
+        // 2. Stats
+        const sds = this.state.data.map(d => jStat.stdev(d.values, true));
+        const ns = this.state.data.map(d => d.values.length);
+        const maxSd = Math.max(...sds);
+        const minSd = Math.min(...sds);
+        const ratio = maxSd / minSd;
+        const isDouble = ratio < 2;
+
+        const maxN = Math.max(...ns);
+        const minN = Math.min(...ns);
+        const nRatio = maxN / minN;
+        const isBalanced = nRatio < 1.5; // Heuristic for balanced design
+
+        let statsHTML = `
+             <div class="bg-gray-100 p-4 rounded text-sm">
+                <h4 class="font-bold border-b border-gray-300 mb-2 pb-1">Group Statistics</h4>
+                <div class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+        `;
+        this.state.data.forEach((d, i) => {
+             statsHTML += `<div class="flex justify-between"><span class="truncate w-1/2">${d.name}:</span> <span class="font-mono">n=${ns[i]}, s=${sds[i].toFixed(2)}</span></div>`;
+        });
+        statsHTML += `</div></div>`;
+
+        statsContainer.innerHTML = statsHTML + `
+             <div class="bg-white p-4 rounded text-sm border border-gray-200">
+                <h4 class="font-bold border-b border-gray-300 mb-2 pb-1">Checklist</h4>
+                <div class="space-y-2">
+                     <label class="checklist-item">
+                        <input type="checkbox">
+                        <span>Do box lengths (IQR) look roughly similar?</span>
+                     </label>
+                     <label class="checklist-item">
+                        <input type="checkbox" ${isDouble ? 'checked' : ''}>
+                        <span class="${isDouble ? 'text-green-700 font-medium' : ''}">Largest SD (${maxSd.toFixed(2)}) < 2x Smallest SD (${minSd.toFixed(2)})? Ratio: ${ratio.toFixed(2)}</span>
+                     </label>
+                      <label class="checklist-item">
+                        <input type="checkbox" ${isBalanced ? 'checked' : ''}>
+                        <span class="${isBalanced ? 'text-green-700 font-medium' : 'text-red-600 font-medium'}">Are Sample Sizes Balanced? (Ratio Max/Min < 1.5)</span>
+                     </label>
+                     <div class="text-xs text-gray-500 italic mt-2 bg-yellow-50 p-2 rounded border border-yellow-100">
+                        <strong>Warning:</strong> If design is Unbalanced (e.g., n=5 vs n=50) AND Variances are Unequal, Standard ANOVA is invalid. You must use Welch's.
+                    </div>
+                </div>
+             </div>
+        `;
+    },
+
+    renderLinearityLab: function() {
+        const x = this.state.data.x;
+        const y = this.state.data.y;
+        const n = x.length;
+        const r = jStat.corrcoeff(x, y);
+        const r2 = r * r;
+        
+        document.getElementById('secondary-viz-content').innerHTML = this.generateScatterSVG(x, y);
+        
+        document.getElementById('secondary-stats-content').innerHTML = `
+            <div class="bg-gray-100 p-4 rounded text-sm">
+                <h4 class="font-bold border-b border-gray-300 mb-2 pb-1">Quick Stats</h4>
+                <div class="grid grid-cols-1 gap-2">
+                     <div class="flex justify-between"><span>Pairs (n):</span> <span class="font-mono font-bold">${n}</span></div>
+                     <div class="flex justify-between"><span>Correlation (r):</span> <span class="font-mono font-bold">${r.toFixed(3)}</span></div>
+                     <div class="flex justify-between"><span>R-Squared:</span> <span class="font-mono font-bold">${r2.toFixed(3)}</span></div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500 italic">
+                    Strong correlation often implies linearity, but always check the plot for curves or outliers!
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded text-sm border border-gray-200">
+                <h4 class="font-bold border-b border-gray-300 mb-2 pb-1">Checklist</h4>
+                <label class="checklist-item">
+                    <input type="checkbox">
+                    <span><strong>Linearity:</strong> Points follow a straight line (no curves/U-shapes)?</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox">
+                    <span><strong>Homoscedasticity:</strong> Is the "tube" of points roughly the same width all the way along? (No cone shapes)</span>
+                </label>
+                <label class="checklist-item">
+                    <input type="checkbox">
+                    <span><strong>No Outliers:</strong> Are there any points far away from the trend?</span>
+                </label>
+            </div>
+        `;
+    },
+
+    generateHistogramSVG: function(data, label) {
+        const h = 80, w = 180; // Small inline
+        const bins = 8;
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min + 0.001;
+        const binSize = range / bins;
+        const freqs = new Array(bins).fill(0);
+        
+        data.forEach(v => {
+            const idx = Math.floor((v - min) / binSize);
+            freqs[Math.min(idx, bins-1)]++;
+        });
+        
+        const maxFreq = Math.max(...freqs);
+        let rects = "";
+        const barW = w / bins;
+        
+        freqs.forEach((f, i) => {
+            const barH = (f / maxFreq) * (h);
+            rects += `<rect x="${i * barW}" y="${h - barH}" width="${barW - 1}" height="${barH}" fill="#818cf8" rx="1" />`;
+        });
+        
+        return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" class="bg-slate-50 rounded border border-gray-100">${rects}</svg>`;
+    },
+
+    generateBoxPlotSVG: function(groups, alignMedians) {
+        // HORIZONTAL IMPLEMENTATION
+        const w = 600;
+        const rowHeight = 50;
+        const headerH = 30;
+        const h = headerH + (groups.length * rowHeight) + 30; // +30 for axis labels
+        const padL = 100; // Space for labels
+        const padR = 20;
+        const chartW = w - padL - padR;
+
+        // 1. Calculate Ranges
+        let allVals = [];
+        let globalMedian = 0;
+        
+        if (alignMedians) {
+            // Find max deviation from median to center 0
+            let maxDev = 0;
+            groups.forEach(g => {
+                const m = jStat.median(g.values);
+                g.values.forEach(v => {
+                    const dev = Math.abs(v - m);
+                    if(dev > maxDev) maxDev = dev;
+                });
+            });
+            // X-Axis range: -maxDev to +maxDev
+            var minX = -maxDev;
+            var maxX = maxDev;
+        } else {
+            // Absolute range
+            allVals = groups.map(g => g.values).flat();
+            var minX = Math.min(...allVals);
+            var maxX = Math.max(...allVals);
+            // Add padding
+            const range = maxX - minX || 1;
+            minX -= range * 0.1;
+            maxX += range * 0.1;
+        }
+
+        const mapX = (val) => padL + ((val - minX) / (maxX - minX)) * chartW;
+
+        let svg = `<svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" style="font-family: sans-serif;">`;
+        
+        // Grid lines
+        svg += `<line x1="${padL}" y1="0" x2="${padL}" y2="${h-30}" stroke="#cbd5e1" stroke-width="1"/>`; // Y-axis line
+        
+        // Zero line for aligned
+        if(alignMedians) {
+            const zX = mapX(0);
+            svg += `<line x1="${zX}" y1="0" x2="${zX}" y2="${h-30}" stroke="#10b981" stroke-width="2" stroke-dasharray="4"/>`;
+        }
+
+        groups.forEach((gObj, i) => {
+            const g = gObj.values;
+            const stats = this.calculateStats(g);
+            const q1 = jStat.percentile(g, 0.25);
+            const q3 = jStat.percentile(g, 0.75);
+            
+            // Calculate coords
+            let ref = alignMedians ? stats.median : 0;
+            let valMin = stats.min - ref;
+            let valMax = stats.max - ref;
+            let valQ1 = q1 - ref;
+            let valQ3 = q3 - ref;
+            let valMed = stats.median - ref;
+
+            const yCenter = headerH + (i * rowHeight) + (rowHeight / 2);
+            const boxH = 24;
+
+            const xMin = mapX(valMin);
+            const xMax = mapX(valMax);
+            const xQ1 = mapX(valQ1);
+            const xQ3 = mapX(valQ3);
+            const xMed = mapX(valMed);
+
+            svg += `
+                <g class="group-box">
+                    <!-- Label -->
+                    <text x="${padL - 10}" y="${yCenter + 4}" text-anchor="end" font-size="12" font-weight="bold" fill="#4b5563">${gObj.name.substring(0,12)}</text>
+                    
+                    <!-- Whiskers -->
+                    <line x1="${xMin}" y1="${yCenter}" x2="${xQ1}" y2="${yCenter}" stroke="#475569" stroke-width="1.5" />
+                    <line x1="${xQ3}" y1="${yCenter}" x2="${xMax}" y2="${yCenter}" stroke="#475569" stroke-width="1.5" />
+                    
+                    <!-- Caps -->
+                    <line x1="${xMin}" y1="${yCenter - boxH/3}" x2="${xMin}" y2="${yCenter + boxH/3}" stroke="#475569" stroke-width="1.5" />
+                    <line x1="${xMax}" y1="${yCenter - boxH/3}" x2="${xMax}" y2="${yCenter + boxH/3}" stroke="#475569" stroke-width="1.5" />
+
+                    <!-- Box -->
+                    <rect x="${xQ1}" y="${yCenter - boxH/2}" width="${xQ3 - xQ1}" height="${boxH}" fill="#c7d2fe" stroke="#4338ca" stroke-width="1.5" rx="1" />
+                    
+                    <!-- Median -->
+                    <line x1="${xMed}" y1="${yCenter - boxH/2}" x2="${xMed}" y2="${yCenter + boxH/2}" stroke="#312e81" stroke-width="3" />
+                </g>
+            `;
+        });
+
+        // X-Axis Labels
+        svg += `<line x1="${padL}" y1="${h-30}" x2="${w-padR}" y2="${h-30}" stroke="#cbd5e1" stroke-width="1"/>`;
+        
+        // Min/Max Labels
+        svg += `<text x="${padL}" y="${h-10}" font-size="10" fill="#64748b" text-anchor="middle">${minX.toFixed(1)}</text>`;
+        svg += `<text x="${w-padR}" y="${h-10}" font-size="10" fill="#64748b" text-anchor="middle">${maxX.toFixed(1)}</text>`;
+        if(alignMedians) {
+             svg += `<text x="${mapX(0)}" y="${h-10}" font-size="10" fill="#10b981" font-weight="bold" text-anchor="middle">Median</text>`;
+        }
+
+        svg += `</svg>`;
+        return svg;
+    },
+
+    generateScatterSVG: function(xData, yData) {
+        const w = 400, h = 250;
+        const pad = 30;
+        
+        const minX = Math.min(...xData), maxX = Math.max(...xData);
+        const minY = Math.min(...yData), maxY = Math.max(...yData);
+        
+        const rangeX = maxX - minX || 1;
+        const rangeY = maxY - minY || 1;
+
+        const mapX = (v) => pad + ((v - minX) / rangeX) * (w - 2*pad);
+        const mapY = (v) => h - pad - ((v - minY) / rangeY) * (h - 2*pad);
+        
+        let points = "";
+        xData.forEach((xv, i) => {
+            points += `<circle cx="${mapX(xv)}" cy="${mapY(yData[i])}" r="4" fill="#4f46e5" opacity="0.6" stroke="#312e81" stroke-width="1"/>`;
+        });
+        
+        // Regression Line
+        const meanX = jStat.mean(xData);
+        const meanY = jStat.mean(yData);
+        const num = xData.reduce((acc, xi, i) => acc + (xi - meanX)*(yData[i] - meanY), 0);
+        const den = xData.reduce((acc, xi) => acc + (xi - meanX)**2, 0);
+        const m = num/den;
+        const b = meanY - m*meanX;
+
+        const y1 = m * minX + b;
+        const y2 = m * maxX + b;
+
+        return `<svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" class="bg-white">
+            <rect width="100%" height="100%" fill="#f8fafc" />
+            <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#cbd5e1" />
+            <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" stroke="#cbd5e1" />
+            <line x1="${mapX(minX)}" y1="${mapY(y1)}" x2="${mapX(maxX)}" y2="${mapY(y2)}" stroke="#fb7185" stroke-width="2" stroke-dasharray="5" />
+            ${points}
+        </svg>`;
+    },
+
+    fmtP: function(p) {
+        if(p < .001) return "< .001";
+        return p.toFixed(3).replace('0.', '.');
+    },
+
+    displayResult: function(title, logic, statVal, pVal, apaStr, distType, params, significant, statsArray, extraInfo = "") {
+        document.getElementById('final-test-name').innerText = title;
+        document.getElementById('final-test-logic').innerText = logic;
+        
+        const badge = document.getElementById('significance-badge');
+        if(significant) {
+            badge.innerHTML = `<span class="badge-sig"><svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Significant</span>`;
+        } else {
+            badge.innerHTML = `<span class="badge-nonsig"><svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> Not Significant</span>`;
+        }
+
+        // Render Stats
+        const statsList = document.getElementById('stats-list');
+        statsList.innerHTML = statsArray.map(s => `
+            <div class="flex justify-between items-center bg-white p-2 border-b border-gray-50 last:border-0">
+                <span class="text-gray-500 text-sm">${s.tex ? '$'+s.tex+'$' : s.label}</span>
+                <span class="font-mono font-bold text-gray-800">${s.val.toFixed(3)}</span>
+            </div>
+        `).join('');
+
+        // Decision Criteria
+        document.getElementById('res-p-val').innerText = this.fmtP(pVal);
+        const decText = document.getElementById('decision-text');
+        if(significant) {
+            decText.innerHTML = `<span class="text-green-700 font-bold flex items-center"><svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Reject Null Hypothesis</span><div class="text-xs font-normal text-gray-500 mt-1 pl-5">p-value is less than alpha (.05)</div>`;
+        } else {
+            decText.innerHTML = `<span class="text-rose-700 font-bold flex items-center"><svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg> Retain Null Hypothesis</span><div class="text-xs font-normal text-gray-500 mt-1 pl-5">p-value is greater than alpha (.05)</div>`;
+        }
+
+        document.getElementById('apa-string').innerText = apaStr;
+        
+        const interp = document.getElementById('interpretation');
+        interp.innerHTML = `<p class="mb-2"><strong>Conclusion:</strong> The result is <span class="${significant ? 'text-green-700 font-bold' : 'text-rose-700 font-bold'}">${significant ? "" : "not"} statistically significant</span> at $\\alpha = .05$. This suggests that ${significant ? "there is a reliable effect or relationship in the population." : "the observed patterns could likely occur by random chance."}</p>${extraInfo ? '<div class="mt-4 bg-white p-3 rounded border border-indigo-100 text-indigo-900 font-mono text-center shadow-sm">Equation: $' + extraInfo + '$</div>' : ''}`;
+        
+        MathJax.typeset();
+        this.drawDistribution(distType, params, statVal);
+    },
+
+    drawDistribution: function(type, params, currentStat) {
+        const container = document.getElementById('result-curve');
+        container.innerHTML = '';
+        const w = container.clientWidth || 400;
+        const h = container.clientHeight || 200;
+        const pad = 30;
+        
+        let maxX = 0;
+        let func = null;
+        let critVal = 0;
+
+        if(type === 'F') {
+            maxX = Math.max(5, currentStat * 1.5);
+            func = (x) => jStat.centralF.pdf(x, params.df1, params.df2);
+            critVal = jStat.centralF.inv(0.95, params.df1, params.df2);
+        } else if (type === 'T') {
+            maxX = Math.max(4, Math.abs(currentStat) * 1.5);
+            func = (x) => jStat.studentt.pdf(x, params.df);
+            critVal = jStat.studentt.inv(0.975, params.df);
+        } else if (type === 'Chi') {
+            maxX = Math.max(10, currentStat * 1.5);
+            func = (x) => jStat.chisquare.pdf(x, params.df);
+            critVal = jStat.chisquare.inv(0.95, params.df);
+        }
+
+        const plotW = w - 2*pad;
+        const plotH = h - 2*pad;
+        
+        let points = "";
+        let startX = (type === 'T') ? -maxX : 0;
+        let step = (maxX - startX) / 100;
+        let maxY = 0;
+
+        for(let x = startX; x <= maxX; x += step) {
+            let y = func(x);
+            if(y > maxY) maxY = y;
+        }
+
+        const mapX = (x) => pad + ((x - startX) / (maxX - startX)) * plotW;
+        const mapY = (y) => h - pad - (y / maxY) * plotH;
+
+        for(let x = startX; x <= maxX; x += step) {
+            points += `${mapX(x)},${mapY(func(x))} `;
+        }
+
+        let critPath = "";
+        const baseY = h - pad;
+        
+        if (type === 'T') {
+             critPath += `M ${mapX(critVal)},${baseY} L ${mapX(critVal)},${mapY(func(critVal))} `;
+             for(let x=critVal; x<=maxX; x+=step) critPath += `L ${mapX(x)},${mapY(func(x))} `;
+             critPath += `L ${mapX(maxX)},${baseY} Z `;
+             critPath += `M ${mapX(-critVal)},${baseY} L ${mapX(-critVal)},${mapY(func(-critVal))} `;
+             for(let x=-critVal; x>=startX; x-=step) critPath += `L ${mapX(x)},${mapY(func(x))} `;
+             critPath += `L ${mapX(startX)},${baseY} Z`;
+        } else {
+             critPath += `M ${mapX(critVal)},${baseY} L ${mapX(critVal)},${mapY(func(critVal))} `;
+             for(let x=critVal; x<=maxX; x+=step) critPath += `L ${mapX(x)},${mapY(func(x))} `;
+             critPath += `L ${mapX(maxX)},${baseY} Z`;
+        }
+
+        const statX = mapX(currentStat);
+        const clampedStatX = Math.max(pad, Math.min(w-pad, statX));
+
+        const svg = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+            <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#cbd5e1" stroke-width="2" />
+            <path d="${critPath}" fill="#fecaca" />
+            <polyline points="${points}" fill="none" stroke="#4b5563" stroke-width="2" />
+            <line x1="${clampedStatX}" y1="${h-pad}" x2="${clampedStatX}" y2="${pad}" stroke="#2563eb" stroke-width="2" stroke-dasharray="4" />
+            <circle cx="${clampedStatX}" cy="${pad}" r="5" fill="#2563eb" />
+            <text x="${clampedStatX}" y="${pad-8}" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="bold">Result</text>
+        </svg>
+        `;
+        container.innerHTML = svg;
+    },
+
+    copyToClipboard: function() {
+        const text = document.getElementById('apa-string').innerText;
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            const btn = document.querySelector('#apa-string + button');
+            const originalText = btn.innerHTML; 
+            btn.innerHTML = `<span class="text-green-200">Copied!</span>`;
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+            }, 2000);
+        } catch (err) {
+            console.error('Copy failed', err);
+        }
+        document.body.removeChild(textArea);
+    },
+
+    goToResults: function() {
+        if (this.state.assumptions.normality === null || this.state.assumptions.secondary === null) {
+            const errEl = document.getElementById('step2-error');
+            errEl.classList.remove('hidden');
+            setTimeout(() => errEl.classList.add('hidden'), 5000); // Hide after 5s
+            return;
+        }
+
+        this.setStep(3);
+        this.runAnalysis();
+    },
+
+    runAnalysis: function() {
+        document.getElementById('apa-string').innerText = "Processing...";
+        if (this.state.testCategory === 'anova') {
+            this.runANOVA();
+        } else {
+            if (this.state.testType === 'regression') {
+                this.runRegression();
+            } else {
+                this.runCorrelation();
+            }
+        }
+    },
+
+    runANOVA: function() {
+        const groups = this.state.data.map(g => g.values);
+        const k = groups.length;
+        const N = groups.reduce((acc, g) => acc + g.length, 0);
+        
+        let method = "Standard One-Way ANOVA";
+        let logicMsg = "Assumptions of Normality and Homogeneity met.";
+        
+        if (this.state.assumptions.normality === false) {
+            method = "Kruskal-Wallis H Test";
+            logicMsg = "Normality assumption violated. Switching to non-parametric Kruskal-Wallis test.";
+            this.calcKruskal(groups, N);
+            return;
+        } 
+        
+        if (this.state.assumptions.secondary === false) {
+            method = "Welch's ANOVA";
+            logicMsg = "Unequal variances detected. Using Welch's adjustment.";
+            this.calcWelch(groups, k);
+            return;
+        }
+
+        const grandMean = jStat.mean(groups.flat());
+        let ssBetween = 0;
+        let ssWithin = 0;
+        
+        groups.forEach(g => {
+            const gMean = jStat.mean(g);
+            ssBetween += g.length * Math.pow(gMean - grandMean, 2);
+            g.forEach(val => ssWithin += Math.pow(val - gMean, 2));
+        });
+
+        const dfBetween = k - 1;
+        const dfWithin = N - k;
+        const msBetween = ssBetween / dfBetween;
+        const msWithin = ssWithin / dfWithin;
+        const F = msBetween / msWithin;
+        const p = 1 - jStat.centralF.cdf(F, dfBetween, dfWithin);
+        const etaSq = ssBetween / (ssBetween + ssWithin);
+
+        const statsArray = [
+            {label: "F-Statistic", val: F},
+            {label: "df Between", val: dfBetween},
+            {label: "df Within", val: dfWithin},
+            {label: "Effect Size", val: etaSq, tex: "\\eta^2"}
+        ];
+
+        this.displayResult(method, logicMsg, F, p, 
+            `F(${dfBetween}, ${dfWithin}) = ${F.toFixed(2)}, p = ${this.fmtP(p)}, \\eta^2 = ${etaSq.toFixed(2)}`,
+            'F', {df1: dfBetween, df2: dfWithin}, (p < .05), statsArray
+        );
+    },
+
+    calcWelch: function(groups, k) {
+        const means = groups.map(g => jStat.mean(g));
+        const vars = groups.map(g => Math.pow(jStat.stdev(g, true), 2));
+        const ns = groups.map(g => g.length);
+        const weights = ns.map((n, i) => n / vars[i]);
+        const sumW = weights.reduce((a, b) => a + b, 0);
+        
+        const wMean = means.reduce((acc, m, i) => acc + (weights[i] * m), 0) / sumW;
+        
+        const num = weights.reduce((acc, w, i) => acc + w * Math.pow(means[i] - wMean, 2), 0) / (k - 1);
+        const termA = weights.reduce((acc, w, i) => acc + (Math.pow(1 - (w/sumW), 2) / (ns[i] - 1)), 0);
+        const fStat = num / (1 + (2*(k-2)/(k*k-1)) * termA);
+        
+        const df1 = k - 1;
+        const df2 = 1 / ( (3/(k*k-1)) * termA ); 
+
+        const p = 1 - jStat.centralF.cdf(fStat, df1, df2);
+
+        const statsArray = [
+            {label: "Welch's F", val: fStat},
+            {label: "df1", val: df1},
+            {label: "df2", val: df2}
+        ];
+
+        this.displayResult("Welch's ANOVA", "Unequal variances detected. Using Welch's adjustment.", fStat, p, 
+            `Welch's F(${df1}, ${df2.toFixed(2)}) = ${fStat.toFixed(2)}, p = ${this.fmtP(p)}`,
+            'F', {df1: df1, df2: df2}, (p < .05), statsArray
+        );
+    },
+
+    calcKruskal: function(groups, N) {
+        let allData = [];
+        groups.forEach((g, i) => g.forEach(v => allData.push({val: v, group: i})));
+        allData.sort((a, b) => a.val - b.val);
+        
+        for(let i=0; i<N; ) {
+            let j = i;
+            while(j < N && allData[j].val === allData[i].val) j++;
+            const rank = (i + j + 1) / 2;
+            for(let k=i; k<j; k++) allData[k].rank = rank;
+            i = j;
+        }
+
+        const rankSums = new Array(groups.length).fill(0);
+        allData.forEach(d => rankSums[d.group] += d.rank);
+        
+        let sumTerm = rankSums.reduce((acc, r, i) => acc + (r*r / groups[i].length), 0);
+        let H = (12 / (N * (N + 1))) * sumTerm - 3 * (N + 1);
+        
+        const df = groups.length - 1;
+        const p = 1 - jStat.chisquare.cdf(H, df);
+
+        const statsArray = [
+            {label: "H-Statistic", val: H},
+            {label: "df", val: df}
+        ];
+
+        this.displayResult("Kruskal-Wallis H Test", "Normality violated. Non-parametric alternative used.", H, p,
+            `H(${df}) = ${H.toFixed(2)}, p = ${this.fmtP(p)}`,
+            'Chi', {df: df}, (p < .05), statsArray
+        );
+    },
+
+    runCorrelation: function() {
+        const x = this.state.data.x;
+        const y = this.state.data.y;
+        const n = x.length;
+        
+        let method = "Pearson Correlation";
+        let logicMsg = "Assumptions of Normality and Linearity met.";
+        let stat = 0;
+        let symbol = "r";
+
+        if (this.state.assumptions.normality === false || this.state.assumptions.secondary === false) {
+            method = "Spearman's Rank Correlation";
+            logicMsg = "Violations detected. Switching to Spearman's Rho.";
+            symbol = "r_s"; 
+            stat = jStat.spearmancoeff(x, y);
+        } else {
+            stat = jStat.corrcoeff(x, y);
+        }
+        
+        const t = stat * Math.sqrt((n - 2) / (1 - stat * stat));
+        const df = n - 2;
+        const p = (1 - jStat.studentt.cdf(Math.abs(t), df)) * 2; 
+
+        const statsArray = [
+            {label: method === "Pearson Correlation" ? "Pearson r" : "Spearman rho", val: stat},
+            {label: "t-Statistic", val: t},
+            {label: "df", val: df}
+        ];
+
+        this.displayResult(method, logicMsg, t, p,
+            `${symbol}(${df}) = ${stat.toFixed(2)}, p = ${this.fmtP(p)}`,
+            'T', {df: df}, (p < .05), statsArray
+        );
+    },
+
+    runRegression: function() {
+        const x = this.state.data.x;
+        const y = this.state.data.y;
+        const n = x.length;
+
+        const meanX = jStat.mean(x);
+        const meanY = jStat.mean(y);
+        let num = 0, den = 0;
+        
+        for(let i=0; i<n; i++) {
+            num += (x[i] - meanX) * (y[i] - meanY);
+            den += Math.pow(x[i] - meanX, 2);
+        }
+        
+        const slope = num / den;
+        const intercept = meanY - (slope * meanX);
+        
+        const yPred = x.map(xi => intercept + slope * xi);
+        const ssRes = y.reduce((acc, yi, i) => acc + Math.pow(yi - yPred[i], 2), 0);
+        const ssTot = y.reduce((acc, yi) => acc + Math.pow(yi - meanY, 2), 0);
+        const r2 = 1 - (ssRes / ssTot);
+        
+        const dfReg = 1;
+        const dfRes = n - 2;
+        const msReg = (ssTot - ssRes) / dfReg;
+        const msRes = ssRes / dfRes;
+        const F = msReg / msRes;
+        const p = 1 - jStat.centralF.cdf(F, dfReg, dfRes);
+
+        const eqn = `\\hat{y} = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}`;
+        
+        const statsArray = [
+            {label: "F-Statistic", val: F},
+            {label: "R-Squared", val: r2, tex: "R^2"},
+            {label: "Slope", val: slope},
+            {label: "Intercept", val: intercept}
+        ];
+
+        this.displayResult("Simple Linear Regression", "Standard OLS Model. Check residuals in advanced tools.", F, p,
+            `F(${dfReg}, ${dfRes}) = ${F.toFixed(2)}, p = ${this.fmtP(p)}, R^2 = ${r2.toFixed(2)}`,
+            'F', {df1: dfReg, df2: dfRes}, (p < .05), statsArray, eqn
+        );
+    }
+};
+
+// Start
+app.init();
+</script>
+</body>
+</html>
