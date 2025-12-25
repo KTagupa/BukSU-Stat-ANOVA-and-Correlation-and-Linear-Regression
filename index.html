@@ -178,6 +178,14 @@
                 </div>
             </div>
 
+            <!-- Relationship Input Mode Switcher -->
+            <div id="xy-mode-switch" class="flex justify-center mb-6 hidden">
+                <div class="bg-gray-100 p-1 rounded-lg inline-flex shadow-inner">
+                    <button onclick="app.setXYMode('separate')" id="xy-mode-separate" class="px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm">Separate X/Y</button>
+                    <button onclick="app.setXYMode('columns')" id="xy-mode-columns" class="px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900">2-Column Paste</button>
+                </div>
+            </div>
+
             <!-- ANOVA Input Mode Switcher -->
             <div id="anova-mode-switch" class="flex justify-center mb-6 hidden">
                 <div class="bg-gray-100 p-1 rounded-lg inline-flex shadow-inner">
@@ -217,6 +225,32 @@
                           <select id="col-group-idx" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500" onchange="app.syncColumnSelects('col-group-idx')">
                               <option value="0" selected>Column 1 (First)</option>
                               <option value="1">Column 2 (Second)</option>
+                          </select>
+                        </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- XY Inputs: Columns (NEW) -->
+            <div id="xy-column-input" class="hidden">
+                 <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                     <div class="mb-4">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Paste Raw Data (Two Numeric Columns)</label>
+                        <textarea id="raw-xy-data" class="w-full h-72 p-4 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm resize-none shadow-inner bg-gray-50" placeholder="10.5  100&#10;12.0  120&#10;15.5  145..."></textarea>
+                     </div>
+                     <div class="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <div>
+                          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">X Variable Column</label>
+                          <select id="col-x-idx" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500" onchange="app.syncXYColumnSelects('col-x-idx')">
+                              <option value="0" selected>Column 1 (First)</option>
+                              <option value="1">Column 2 (Second)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Y Variable Column</label>
+                          <select id="col-y-idx" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500" onchange="app.syncXYColumnSelects('col-y-idx')">
+                              <option value="0">Column 1 (First)</option>
+                              <option value="1" selected>Column 2 (Second)</option>
                           </select>
                         </div>
                      </div>
@@ -474,13 +508,14 @@ const app = {
         testCategory: null, 
         testType: 'anova',
         anovaInputMode: 'separate', 
+        xyInputMode: 'separate', // New state
         data: [], 
         anovaGroups: 3,
         alignMedians: false,
-        showResiduals: false, // New State
+        showResiduals: false, 
         assumptions: {
-            normality: null,     // null = pending (changed from 'normal' to 'normality' for consistency)
-            secondary: null   // null = pending (Homogeneity or Linearity)
+            normality: null,     
+            secondary: null   
         }
     },
 
@@ -497,6 +532,8 @@ const app = {
             document.getElementById('anova-controls').classList.remove('hidden');
             document.getElementById('anova-mode-switch').classList.remove('hidden');
             document.getElementById('xy-inputs').classList.add('hidden');
+            document.getElementById('xy-column-input').classList.add('hidden');
+            document.getElementById('xy-mode-switch').classList.add('hidden');
             document.getElementById('relationship-controls').classList.add('hidden');
             this.setAnovaMode('separate'); // Default
         } else {
@@ -506,8 +543,10 @@ const app = {
             document.getElementById('anova-mode-switch').classList.add('hidden');
             document.getElementById('anova-column-input').classList.add('hidden');
             document.getElementById('xy-inputs').classList.remove('hidden');
+            document.getElementById('xy-mode-switch').classList.remove('hidden');
             document.getElementById('relationship-controls').classList.remove('hidden');
             document.querySelector('input[name="relType"][value="correlation"]').checked = true;
+            this.setXYMode('separate'); // Default
         }
 
         document.getElementById('wizard-nav').classList.remove('hidden');
@@ -537,6 +576,26 @@ const app = {
         }
     },
     
+    setXYMode: function(mode) {
+        this.state.xyInputMode = mode;
+        const btnSep = document.getElementById('xy-mode-separate');
+        const btnCol = document.getElementById('xy-mode-columns');
+        
+        if (mode === 'separate') {
+            document.getElementById('xy-inputs').classList.remove('hidden');
+            document.getElementById('xy-column-input').classList.add('hidden');
+            
+            btnSep.className = "px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm";
+            btnCol.className = "px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900";
+        } else {
+            document.getElementById('xy-inputs').classList.add('hidden');
+            document.getElementById('xy-column-input').classList.remove('hidden');
+            
+            btnCol.className = "px-5 py-2 rounded-md text-sm font-bold transition bg-white text-indigo-600 shadow-sm";
+            btnSep.className = "px-5 py-2 rounded-md text-sm font-bold transition text-gray-500 hover:text-gray-900";
+        }
+    },
+
     syncColumnSelects: function(changedId) {
         const valSel = document.getElementById('col-val-idx');
         const grpSel = document.getElementById('col-group-idx');
@@ -547,6 +606,20 @@ const app = {
         } else {
              if (valSel.value === grpSel.value) {
                  valSel.value = grpSel.value === "0" ? "1" : "0";
+             }
+        }
+    },
+
+    syncXYColumnSelects: function(changedId) {
+        const xSel = document.getElementById('col-x-idx');
+        const ySel = document.getElementById('col-y-idx');
+        if (changedId === 'col-x-idx') {
+             if (ySel.value === xSel.value) {
+                 ySel.value = xSel.value === "0" ? "1" : "0";
+             }
+        } else {
+             if (xSel.value === ySel.value) {
+                 xSel.value = ySel.value === "0" ? "1" : "0";
              }
         }
     },
@@ -737,39 +810,97 @@ const app = {
                 }
             }
         } else {
-            const xEl = document.getElementById('dataX');
-            const yEl = document.getElementById('dataY');
-            const xNameEl = document.getElementById('x-name');
-            const yNameEl = document.getElementById('y-name');
-            
-            const xVal = this.parseInput(xEl.value);
-            const yVal = this.parseInput(yEl.value);
-            
-            if(xVal.length < 3) { 
-                xEl.classList.add('input-error'); 
-                isValid = false; 
-                if(!firstError) firstError = xEl; 
-                errorText = "Need at least 3 pairs for analysis.";
+            // Relationship Logic
+            let xVal = [], yVal = [];
+            let xName = "Variable X", yName = "Variable Y";
+
+            if (this.state.xyInputMode === 'columns') {
+                // Parse 2-column input
+                const rawEl = document.getElementById('raw-xy-data');
+                const rawText = rawEl.value;
+                const xIdx = parseInt(document.getElementById('col-x-idx').value);
+                const yIdx = parseInt(document.getElementById('col-y-idx').value);
+
+                if (!rawText.trim()) {
+                    rawEl.classList.add('input-error');
+                    isValid = false;
+                    firstError = rawEl;
+                    errorText = "Please enter data in the textarea.";
+                } else {
+                    const lines = rawText.trim().split('\n');
+                    lines.forEach(line => {
+                        const parts = line.trim().split(/[\t, ]+/);
+                        if (parts.length >= 2) {
+                            const valX = parseFloat(parts[xIdx]);
+                            const valY = parseFloat(parts[yIdx]);
+                            if (!isNaN(valX) && !isNaN(valY)) {
+                                xVal.push(valX);
+                                yVal.push(valY);
+                            }
+                        }
+                    });
+                    
+                    if (xVal.length === 0) {
+                        rawEl.classList.add('input-error');
+                        isValid = false;
+                        firstError = rawEl;
+                        errorText = "Could not find any valid numeric pairs in the columns.";
+                    }
+                }
+            } else {
+                // Parse Separate Inputs
+                const xEl = document.getElementById('dataX');
+                const yEl = document.getElementById('dataY');
+                const xNameEl = document.getElementById('x-name');
+                const yNameEl = document.getElementById('y-name');
+                
+                xName = xNameEl.value.trim() || "Variable X";
+                yName = yNameEl.value.trim() || "Variable Y";
+                
+                xVal = this.parseInput(xEl.value);
+                yVal = this.parseInput(yEl.value);
+                
+                if(xVal.length < 3) { 
+                    xEl.classList.add('input-error'); 
+                    isValid = false; 
+                    if(!firstError) firstError = xEl; 
+                    errorText = "Need at least 3 pairs for analysis.";
+                }
+                if(yVal.length < 3) { 
+                    yEl.classList.add('input-error'); 
+                    isValid = false; 
+                    if(!firstError) firstError = yEl; 
+                }
+                if(isValid && xVal.length !== yVal.length) {
+                    isValid = false;
+                    yEl.classList.add('input-error');
+                    xEl.classList.add('input-error');
+                    if(!firstError) firstError = xEl;
+                    errorText = `Mismatch: X has ${xVal.length} items, Y has ${yVal.length}.`;
+                }
             }
-            if(yVal.length < 3) { 
-                yEl.classList.add('input-error'); 
-                isValid = false; 
-                if(!firstError) firstError = yEl; 
-            }
-            if(isValid && xVal.length !== yVal.length) {
-                isValid = false;
-                yEl.classList.add('input-error');
-                xEl.classList.add('input-error');
-                if(!firstError) firstError = xEl;
-                errorText = `Mismatch: X has ${xVal.length} items, Y has ${yVal.length}.`;
+            
+            // Final count check for both modes
+            if (isValid && xVal.length < 3) {
+                 isValid = false;
+                 errorText = "Need at least 3 valid numeric pairs.";
+                 if (this.state.xyInputMode === 'columns') {
+                     document.getElementById('raw-xy-data').classList.add('input-error');
+                     if(!firstError) firstError = document.getElementById('raw-xy-data');
+                 } else {
+                     document.getElementById('dataX').classList.add('input-error');
+                     if(!firstError) firstError = document.getElementById('dataX');
+                 }
             }
             
-            data = {
-                x: xVal, 
-                y: yVal,
-                xName: (xNameEl.value.trim() || "Variable X") + " (X)",
-                yName: (yNameEl.value.trim() || "Variable Y") + " (Y)"
-            };
+            if (isValid) {
+                data = {
+                    x: xVal, 
+                    y: yVal,
+                    xName: xName + " (X)",
+                    yName: yName + " (Y)"
+                };
+            }
         }
 
         if(!isValid) {
@@ -1649,6 +1780,57 @@ const app = {
     },
 
     runRegression: function() {
+        // NEW: Check for assumption violations (Linearity/Homoscedasticity)
+        if (this.state.assumptions.secondary === false) {
+             document.getElementById('final-test-name').innerText = "Analysis Halted";
+             document.getElementById('final-test-logic').innerText = "Critical Assumption Violated";
+             
+             document.getElementById('significance-badge').innerHTML = 
+                `<span class="bg-red-100 text-red-800 border border-red-300 px-5 py-2 rounded-lg text-sm font-bold uppercase tracking-wider shadow-sm flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Invalid Model
+                </span>`;
+
+             // Clear stats list
+             document.getElementById('stats-list').innerHTML = `
+                <div class="bg-gray-50 p-4 rounded text-sm text-gray-500 italic text-center border border-gray-100">
+                    Statistics hidden due to model invalidity.
+                </div>`;
+
+             // Clear Criteria
+             document.getElementById('res-p-val').innerText = "---";
+             document.getElementById('decision-text').innerHTML = "<span class='text-gray-400'>Hypothesis testing unavailable</span>";
+
+             // Clear Graph
+             document.getElementById('result-curve').innerHTML = `
+                <div class="h-full w-full bg-gray-50 flex flex-col items-center justify-center text-gray-400 border border-gray-100 rounded">
+                    <svg class="w-12 h-12 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                    <span>Distribution Plot Disabled</span>
+                </div>`;
+             
+             document.getElementById('apa-string').innerText = "Analysis stopped due to assumption violations.";
+
+             // Explanation
+             const interp = document.getElementById('interpretation');
+             interp.innerHTML = `
+                <div class="space-y-3">
+                    <p class="font-bold text-red-700">Why was this analysis stopped?</p>
+                    <p class="text-sm text-gray-800">
+                        You indicated that the <strong>Linearity</strong> or <strong>Homoscedasticity</strong> assumption was violated in the Assumption Lab. 
+                        Standard Linear Regression strictly relies on the data following a straight line with consistent error variance. 
+                        Applying it to this data would yield misleading coefficients and invalid p-values.
+                    </p>
+                    <div class="bg-indigo-50 p-3 rounded border-l-4 border-indigo-500 text-sm">
+                        <strong>Recommendation:</strong><br/>
+                        Analyzing this dataset requires higher-level statistical techniques (such as Non-linear Regression, Weighted Least Squares, or Generalized Linear Models) which are beyond the scope of elementary business statistics.
+                        <br/><br/>
+                        <em>Please consult a qualified statistician for assistance with this data.</em>
+                    </div>
+                </div>
+             `;
+             return;
+        }
+
         const x = this.state.data.x;
         const y = this.state.data.y;
         const n = x.length;
