@@ -445,12 +445,8 @@
                     <p id="modal-instr-sec" class="mb-0">Use the boxplots and statistics to check if variability is consistent across groups.</p>
                 </div>
                 
-                <!-- Toggle for alignment -->
-                <div id="boxplot-controls" class="flex justify-end">
-                     <label class="flex items-center cursor-pointer text-sm text-gray-600 hover:text-indigo-600 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm transition">
-                         <input type="checkbox" id="alignMedianCheck" class="mr-2 h-4 w-4 text-indigo-600 accent-indigo-600" onchange="app.toggleBoxplotAlign()">
-                         <span>Align Medians (Compare Spread Only)</span>
-                     </label>
+                <!-- Controls for Viz (Toggle) -->
+                <div id="boxplot-controls" class="flex justify-end pt-3">
                 </div>
 
                 <div id="secondary-viz-content" class="bg-white p-4 rounded border border-gray-200"></div>
@@ -481,6 +477,7 @@ const app = {
         data: [], 
         anovaGroups: 3,
         alignMedians: false,
+        showResiduals: false, // New State
         assumptions: {
             normality: null,     // null = pending (changed from 'normal' to 'normality' for consistency)
             secondary: null   // null = pending (Homogeneity or Linearity)
@@ -558,12 +555,13 @@ const app = {
         this.state.currentStep = 0;
         this.state.data = [];
         this.state.alignMedians = false;
+        this.state.showResiduals = false; // Reset
         this.state.assumptions.normality = null;
         this.state.assumptions.secondary = null;
         
         document.getElementById('wizard-nav').classList.add('hidden');
         document.getElementById('btn-home').classList.add('hidden');
-        document.getElementById('alignMedianCheck').checked = false;
+        // Checkboxes reset manually in render functions
         
         this.updateBadge('badge-normality', null);
         this.updateBadge('badge-secondary', null);
@@ -806,7 +804,8 @@ const app = {
         const btnFail = document.getElementById('btn-sec-fail');
         const modalTitle = document.getElementById('modal-title-sec');
         const modalInstr = document.getElementById('modal-instr-sec');
-        const boxControl = document.getElementById('boxplot-controls');
+        
+        // Controls are now handled inside render functions
 
         if (this.state.testCategory === 'anova') {
             secTitle.innerText = "2. Homogeneity Lab";
@@ -815,7 +814,6 @@ const app = {
             modalInstr.innerText = "Use the boxplots and standard deviation comparisons to check if variability is consistent across groups.";
             btnPass.innerText = "Assume Equal Variances";
             btnFail.innerText = "Assume Unequal Variances";
-            boxControl.classList.remove('hidden');
         } else {
             secTitle.innerText = "2. Linearity & Spread";
             secDesc.innerText = "Check scatterplot for straight-line pattern and consistent spread.";
@@ -823,7 +821,6 @@ const app = {
             modalInstr.innerText = "Inspect the scatterplot. Does the relationship appear to follow a straight line with consistent width?";
             btnPass.innerText = "Assume Linear/Homoscedastic";
             btnFail.innerText = "Assume Violated";
-            boxControl.classList.add('hidden');
         }
     },
 
@@ -871,6 +868,11 @@ const app = {
     toggleBoxplotAlign: function() {
         this.state.alignMedians = document.getElementById('alignMedianCheck').checked;
         this.renderHomogeneityLab(); // Re-render
+    },
+    
+    toggleResiduals: function() {
+        this.state.showResiduals = !this.state.showResiduals;
+        this.renderLinearityLab(); // Re-render
     },
 
     calculateStats: function(arr) {
@@ -998,6 +1000,14 @@ const app = {
         const vizContainer = document.getElementById('secondary-viz-content');
         const statsContainer = document.getElementById('secondary-stats-content');
         
+        // Setup Controls (ANOVA only)
+        document.getElementById('boxplot-controls').innerHTML = `
+             <label class="flex items-center cursor-pointer text-sm text-gray-600 hover:text-indigo-600 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm transition">
+                 <input type="checkbox" id="alignMedianCheck" ${this.state.alignMedians ? 'checked' : ''} class="mr-2 h-4 w-4 text-indigo-600 accent-indigo-600" onchange="app.toggleBoxplotAlign()">
+                 <span>Align Medians (Compare Spread Only)</span>
+             </label>
+        `;
+        
         // 1. Horizontal Boxplot
         vizContainer.innerHTML = this.generateBoxPlotSVG(this.state.data, this.state.alignMedians);
 
@@ -1055,7 +1065,17 @@ const app = {
         const r = jStat.corrcoeff(x, y);
         const r2 = r * r;
         
-        document.getElementById('secondary-viz-content').innerHTML = this.generateScatterSVG(x, y);
+        // Setup Controls (Residuals Toggle)
+        document.getElementById('boxplot-controls').innerHTML = `
+             <label class="flex items-center cursor-pointer text-sm text-gray-600 hover:text-indigo-600 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm transition">
+                 <input type="checkbox" ${this.state.showResiduals ? 'checked' : ''} class="mr-2 h-4 w-4 text-indigo-600 accent-indigo-600" onchange="app.toggleResiduals()">
+                 <span>Show Residual Plot (Check Homogeneity)</span>
+             </label>
+        `;
+        
+        document.getElementById('secondary-viz-content').innerHTML = this.state.showResiduals 
+            ? this.generateResidualSVG(x, y)
+            : this.generateScatterSVG(x, y);
         
         document.getElementById('secondary-stats-content').innerHTML = `
             <div class="bg-gray-100 p-4 rounded text-sm">
@@ -1258,6 +1278,56 @@ const app = {
             <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#cbd5e1" />
             <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" stroke="#cbd5e1" />
             <line x1="${mapX(minX)}" y1="${mapY(y1)}" x2="${mapX(maxX)}" y2="${mapY(y2)}" stroke="#fb7185" stroke-width="2" stroke-dasharray="5" />
+            ${points}
+        </svg>`;
+    },
+    
+    generateResidualSVG: function(xData, yData) {
+        const w = 400, h = 250;
+        const pad = 40; // More pad for labels
+        
+        // Calculate Regression
+        const meanX = jStat.mean(xData);
+        const meanY = jStat.mean(yData);
+        const num = xData.reduce((acc, xi, i) => acc + (xi - meanX)*(yData[i] - meanY), 0);
+        const den = xData.reduce((acc, xi) => acc + (xi - meanX)**2, 0);
+        const m = num/den;
+        const b = meanY - m*meanX;
+        
+        // Calculate Residuals and Predicted
+        const predicted = xData.map(val => m * val + b);
+        const residuals = yData.map((val, i) => val - predicted[i]);
+        
+        const minPred = Math.min(...predicted), maxPred = Math.max(...predicted);
+        const rangePred = maxPred - minPred || 1;
+        
+        const maxResAbs = Math.max(...residuals.map(Math.abs));
+        const maxLimit = maxResAbs * 1.1; // Add breathing room
+        
+        const mapX = (v) => pad + ((v - minPred) / rangePred) * (w - 2*pad);
+        // Map Y centered at h/2
+        const mapY = (v) => (h/2) - (v / maxLimit) * ((h - 2*pad)/2);
+        
+        let points = "";
+        predicted.forEach((pred, i) => {
+            points += `<circle cx="${mapX(pred)}" cy="${mapY(residuals[i])}" r="4" fill="#ef4444" opacity="0.6" stroke="#b91c1c" stroke-width="1"/>`;
+        });
+        
+        const zeroY = mapY(0);
+
+        return `<svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" class="bg-white">
+            <rect width="100%" height="100%" fill="#f8fafc" />
+            <!-- Axis -->
+            <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#cbd5e1" />
+            <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" stroke="#cbd5e1" />
+            
+            <!-- Zero Line -->
+            <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="#10b981" stroke-width="2" stroke-dasharray="4" />
+            
+            <!-- Labels -->
+            <text x="${w/2}" y="${h-10}" text-anchor="middle" font-size="10" fill="#64748b">Predicted Value (y-hat)</text>
+            <text x="${10}" y="${h/2}" text-anchor="middle" transform="rotate(-90, 10, ${h/2})" font-size="10" fill="#64748b">Residual</text>
+            
             ${points}
         </svg>`;
     },
